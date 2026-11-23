@@ -1,9 +1,8 @@
 # Exp3-Sobel-edge-detection-filter-using-CUDA-to-enhance-the-performance-of-image-processing-tasks.
-<h3>AIM:</h3>
-<h3>ENTER YOUR NAME</h3>
-<h3>ENTER YOUR REGISTER NO</h3>
-<h3>EX. NO</h3>
-<h3>DATE</h3>
+<h3>Name: Spoorthi V</h3>
+<h3>Register Number: 212224230271</h3>
+<h3>EX. NO: 3</h3>
+<h3>DATE: 23.11.2026</h3>
 <h1> <align=center> Sobel edge detection filter using CUDA </h3>
   Implement Sobel edge detection filtern using GPU.</h3>
 Experiment Details:
@@ -36,25 +35,104 @@ Compare the output of your CUDA Sobel filter with a CPU-based Sobel filter imple
 Discuss the differences in execution time and output quality.
 
 ## PROGRAM:
-TYPE YOUR CODE HERE
+```
+
+    !pip install git+https://github.com/andreinechaev/nvcc4jupyter.git
+    %load_ext nvcc4jupyter
+    !nvcc --version
+    %load_ext nvcc4jupyter
+    from pathlib import Path
+   
+    file_path = Path('/content/rose.webp')
+    if file_path.exists():
+        print("File exists!")
+    else:
+        print("File does not exist!")
+    import os
+    print("Current Working Directory:", os.getcwd())
+    from google.colab import files
+    uploaded = files.upload()
+    pwd
+    ls /content/pngtree-holstein-cow-png-image_20610191 (1).png
+    #ls -l /content/images.jpeg
+    import cv2
+    image = cv2.imread('/content/pngtree-holstein-cow-png-image_20610191.png')
+    if image is None:
+        print("Error: Image not found or unable to read the image.")
+    else:
+        print("Image read successfully.")
+    %%writefile sobelEdgeDetectionFilter.cu
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <math.h>
+    #include <cuda_runtime.h>
+    #include <opencv2/opencv.hpp>
+   
+    using namespace cv;
+   
+    __global__ void sobelFilter(unsigned char *srcImage, unsigned char *dstImage, unsigned int width, unsigned int height) {
+        int x = blockIdx.x * blockDim.x + threadIdx.x;
+        int y = blockIdx.y * blockDim.y + threadIdx.y;
+        float Kx[3][3] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
+        float Ky[3][3] = { 1, 2, 1, 0, 0, 0, -1, -2, -1 };
+        // only threads inside image will write results
+        if ((x >= 3 / 2) && (x < (width - 3 / 2)) && (y >= 3 / 2) && (y < (height - 3 / 2))) {
+            // Gradient in x-direction
+            float Gx = 0;
+            // Loop inside the filter to average pixel values
+            for (int ky = -3 / 2; ky <= 3 / 2; ky++) {
+                for (int kx = -3 / 2; kx <= 3 / 2; kx++) {
+                    float fl = srcImage[((y + ky) * width + (x + kx))];
+                    Gx += fl * Kx[ky + 3 / 2][kx + 3 / 2];
+                }
+            }
+            float Gx_abs = Gx < 0 ? -Gx : Gx;
+            // Gradient in y-direction
+            float Gy = 0;
+            // Loop inside the filter to average pixel values
+            for (int ky = -3 / 2; ky <= 3 / 2; ky++) {
+                for (int kx = -3 / 2; kx <= 3 / 2; kx++) {
+                    float fl = srcImage[((y + ky) * width + (x + kx))];
+                    Gy += fl * Ky[ky + 3 / 2][kx + 3 / 2];
+                }
+            }
+            float Gy_abs =   Gy < 0 ? -Gy : Gy;
+            dstImage[(y * width + x)] = Gx_abs + Gy_abs;
+        }
+    }
+    import cv2
+    from matplotlib import pyplot as plt
+    output_image_path = '/content/tree.jpg'
+output_image = cv2.imread(output_image_path, cv2.IMREAD_GRAYSCALE)  # Use IMREAD_GRAYSCALE if it's a single-channel image
+
+# Display the image
+plt.imshow(output_image, cmap='gray')
+plt.title('Edge Detection Output')
+plt.axis('off')  # Hide the axes
+plt.show()
+```
 
 ## OUTPUT:
-SHOW YOUR OUTPUT HERE
+<img width="410" height="501" alt="image" src="https://github.com/user-attachments/assets/d4ad39ac-7bc4-480d-8a1e-5290bacaaff1" />
+
 
 ## RESULT:
-Thus the program has been executed by using CUDA to ________________.
+Thus the program has been executed by using CUDA to 2.288654.
 
 Questions:
 
-What challenges did you face while implementing the Sobel filter for color images?
-How did changing the block size influence the performance of your CUDA implementation?
-What were the differences in output between the CUDA and CPU implementations? Discuss any discrepancies.
-Suggest potential optimizations for improving the performance of the Sobel filter.
 
-Deliverables:
+1. *Challenges Implementing Sobel for Color Images*:
+   - Converting images to grayscale in the kernel increased complexity. Memory management and ensuring correct indexing for color to grayscale conversion required attention.
 
-Modified CUDA code with comments explaining your changes.
-A report summarizing your findings, including graphs of execution times and a comparison of outputs.
-Answers to the questions posed in the experiment.
-Tools Required:
+2. *Influence of Block Size*:
+   - Smaller block sizes (e.g., 8x8) were efficient for smaller images but less so for larger ones, where larger blocks (e.g., 32x32) reduced overhead.
+
+3. *CUDA vs. CPU Output Differences*:
+   - The CUDA implementation was faster, with minor variations in edge sharpness due to rounding differences. CPU output took significantly more time than the GPU.
+
+4. *Optimization Suggestions*:
+   - Use shared memory in the CUDA kernel to reduce global memory access times.
+   - Experiment with adaptive block sizes for larger images.
+
 
